@@ -1,0 +1,145 @@
+# =====================================================================
+#  Shorts Factory - configurare
+#  Cheile API NU se pun aici. Pune-le in fisierul .env (vezi .env.example).
+# =====================================================================
+
+channel:
+  name: "YOUR_CHANNEL_NAME"        # numele canalului
+  handle: "@yourhandle"            # apare ca watermark discret (optional)
+  language: "en"
+
+# ---------------------------------------------------------------------
+# LLM (Claude API) - idei, scripturi, critic
+# ---------------------------------------------------------------------
+llm:
+  model: "claude-sonnet-5-5"      # modelul Sonnet curent; poti pune "claude-opus-5-5" pentru calitate maxima
+  max_tokens: 16000
+  critic_rounds: 1                 # cate runde de critica + rescriere
+  ideas_per_batch: 15
+
+# ---------------------------------------------------------------------
+# Regulile povestii (le citeste si codul de validare, si promptul)
+# ---------------------------------------------------------------------
+story:
+  # Calibrat pe naratorul canalului de referinta: ~3.5 cuvinte/secunda, fara pauze -> ~120 cuvinte in 35 s
+  min_words: 100
+  max_words: 135
+  min_beats: 14
+  max_beats: 26
+  max_words_per_beat: 9
+  max_title_chars: 60
+  # Premise care NU au voie sa apara (ale altor canale + ale tale deja facute).
+  # Fisierul projects/premise_history.jsonl se completeaza automat.
+  banned_premises:
+    - "anything he points at comes towards him"
+    - "he can walk through anything while holding his breath"
+    - "everyone is born with a key that opens exactly one lock"
+
+# ---------------------------------------------------------------------
+# Biblioteca de productie: LLM-ul are voie sa foloseasca DOAR ce e aici.
+# Cand builderul iti livreaza decoruri noi, le adaugi in lista.
+# ---------------------------------------------------------------------
+library:
+  hero:
+    id: "hero"
+    description: "the mascot: blocky R6 kid, mustard-yellow hoodie, red scarf, decal face"
+  cast:
+    - {id: "mom",      description: "mother, green sweater, brown hair"}
+    - {id: "dad",      description: "father, blue shirt, glasses"}
+    - {id: "brother",  description: "little brother, striped red-white shirt"}
+    - {id: "friend",   description: "best friend girl, purple jacket, ponytail"}
+    - {id: "elder",    description: "old man of the town, grey beard, cane"}
+    - {id: "neighbor", description: "neighbour kid, orange cap"}
+    - {id: "crowd",    description: "generic townspeople, 3-8 background avatars"}
+  sets:
+    - {id: "home_living_room", lighting: ["day", "evening"]}
+    - {id: "home_bedroom",     lighting: ["day", "night"]}
+    - {id: "home_kitchen",     lighting: ["day"]}
+    - {id: "street",           lighting: ["day", "night"]}
+    - {id: "school",           lighting: ["day"]}
+    - {id: "forest",           lighting: ["day", "sunset"]}
+    - {id: "town_square",      lighting: ["day", "sunset"]}
+    - {id: "tunnel_cave",      lighting: ["dark"]}
+    - {id: "rooftop",          lighting: ["night"]}
+    - {id: "lake_beach",       lighting: ["day"]}
+  expressions: [neutral, happy, shocked, scared, sad, determined, crying, sleepy, angry, proud,
+                panicked, confused, grin, eyes_closed, screaming, relieved, curious, tired, frowning, amazed]
+  cameras: ["wide establishing", "medium", "close-up", "extreme close-up", "over-the-shoulder",
+            "low angle", "high angle", "tracking", "push-in", "POV"]
+  vfx: [glow, ripple, dust, sparkles, water, smoke, lightning, shake, none]
+  sfx_tags: [whoosh, impact, pop, magic, rumble, thunder, rain, splash, door, footsteps,
+             gasp, heartbeat, glass, wind, bell, swoosh_up, slam, creak]
+
+# ---------------------------------------------------------------------
+# Voce (ElevenLabs)
+# ---------------------------------------------------------------------
+voice:
+  provider: "elevenlabs"
+  voice_id: "PUT_VOICE_ID_HERE"    # il gasesti cu:  python run.py voices
+  model_id: "eleven_multilingual_v2"   # vezi alte modele cu: python run.py models
+  output_format: "mp3_44100_128"   # merge pe orice plan; WAV cere planul Pro
+  settings:
+    stability: 0.55
+    similarity_boost: 0.8
+    style: 0.15
+    use_speaker_boost: true
+    speed: 1.15                    # 0.7 - 1.2 (limita ElevenLabs)
+  seed: 1234                       # aceeasi voce, rezultate cat mai consistente
+  tempo: 1.12                      # accelerare extra dupa generare (fara schimbare de ton).
+                                   # Tinta: ~3.4-3.6 cuvinte/secunda, ca la referinta. 1.0 = oprit.
+
+# ---------------------------------------------------------------------
+# Audio mix
+# ---------------------------------------------------------------------
+audio:
+  sample_rate: 48000
+  voice_gain_db: 0
+  music_gain_db: -16               # muzica sub voce
+  sfx_gain_db: -6
+  duck_music: true                 # coboara muzica automat cand vorbeste naratorul
+  tail_seconds: 0.25               # liniste la final (bucla curata)
+  target_lufs: -14                 # loudness standard pentru Shorts/TikTok
+  true_peak_db: -1.5
+
+# ---------------------------------------------------------------------
+# Subtitrari (stil de referinta: 2-5 cuvinte, alb bold, cuvant-cheie rosu)
+# ---------------------------------------------------------------------
+captions:
+  font_file: "assets/fonts/Poppins-Bold.ttf"
+  font_name: "Poppins"
+  font_size: 78
+  max_words: 5
+  max_chars: 28
+  lowercase: true
+  strip_punctuation: true
+  primary_color: "#FFFFFF"
+  emphasis_color: "#FF2A2A"
+  outline_color: "#000000"
+  outline: 5
+  shadow: 3
+  position_y_ratio: 0.30           # inaltimea textului: 30% de sus
+  pop_in: true                     # mic efect de "pop" la fiecare subtitrare
+  min_duration: 0.30
+
+# ---------------------------------------------------------------------
+# Video
+# ---------------------------------------------------------------------
+video:
+  width: 1080
+  height: 1920
+  fps: 30
+  fit: "cover"                     # cover = umple ecranul (taie marginile); contain = benzi negre
+  crf: 18
+  preset: "slow"
+  punch_in: true                   # zoom scurt pe cuvintele-cheie
+  punch_in_zoom: 1.10
+  watermark: false                 # true = @handle discret pe video
+
+# ---------------------------------------------------------------------
+# Verificari automate (QA)
+# ---------------------------------------------------------------------
+qa:
+  max_duration_s: 59
+  min_duration_s: 20
+  duration_tolerance_s: 0.20
+  lufs_tolerance: 1.5
