@@ -99,6 +99,7 @@ audio:
   voice_gain_db: 0
   music_gain_db: -16               # muzica sub voce
   sfx_gain_db: -6
+  sfx_target_lufs: -16             # sfx-pack aduce toate efectele la acelasi volum (fara sa treaca de -1 dB varf)
   duck_music: true                 # coboara muzica automat cand vorbeste naratorul
   tail_seconds: 0.25               # liniste la final (bucla curata)
   target_lufs: -14                 # loudness standard pentru Shorts/TikTok

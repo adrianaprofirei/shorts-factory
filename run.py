@@ -233,7 +233,14 @@ def cmd_sfx_pack(args, cfg):
         prompt, dur = voice.SFX_PROMPTS.get(tag, (tag.replace("_", " "), 1.5))
         print(f"  generez {tag}...")
         voice.generate_sfx(prompt, ASSETS / "sfx" / f"{tag}.mp3", dur)
-    print("Efectele sunt in assets/sfx/. Asculta-le si inlocuieste ce nu-ti place.")
+    target = cfg["audio"].get("sfx_target_lufs", -16)
+    print(f"  egalizez volumul la {target} LUFS...")
+    for tag in cfg["library"]["sfx_tags"]:
+        path = audio.find_sfx(tag)
+        gain = audio.normalize_sfx(path, target) if path else 0.0
+        if gain:
+            print(f"    {tag}: {gain:+.1f} dB")
+    print("Efectele sunt in assets/sfx/. Asculta-le si inlocuieste ce nu-ti place (apoi ruleaza din nou sfx-pack).")
 
 
 def cmd_selftest(args, cfg):

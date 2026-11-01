@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import wave
 from pathlib import Path
 
@@ -27,6 +28,25 @@ def find_sfx(tag: str) -> Path | None:
         if p.exists():
             return p
     return None
+
+
+def normalize_sfx(path: Path, target: float, peak: float = -1.0) -> float:
+    """Bring one SFX file to a common loudness, without pushing its peak over `peak` dBTP.
+
+    Rewrites the file in place; returns the gain applied in dB (0 if it was already close).
+    """
+    m = loudness(path, target)
+    level, tp = float(m["input_i"]), float(m["input_tp"])
+    if not (math.isfinite(level) and math.isfinite(tp)):
+        return 0.0  # silent file, nothing to measure
+    gain = min(target - level, peak - tp)
+    if abs(gain) < 1.5:  # inaudible in the mix; skipping it also avoids re-encoding the mp3 on every run
+        return 0.0
+    tmp = path.with_name(f"{path.stem}_norm{path.suffix}")
+    run(["ffmpeg", "-y", "-hide_banner", "-i", str(path), "-af", f"volume={gain:.2f}dB",
+         "-q:a", "2", str(tmp)])  # -q:a 2 = high-quality mp3 (ignored for wav)
+    tmp.replace(path)
+    return gain
 
 
 def cap_pauses(voice: Path, alignment: dict, max_pause: float, sr: int, out_wav: Path) -> tuple[dict, float]:
