@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import hashlib
+import wave
 from pathlib import Path
 
 from .config import ASSETS
 from .ff import duration, loudness, run
+from .timing import alignment_to_words
 
 AUDIO_EXT = (".wav", ".mp3", ".ogg", ".flac", ".m4a")
 
@@ -25,6 +27,44 @@ def find_sfx(tag: str) -> Path | None:
         if p.exists():
             return p
     return None
+
+
+def cap_pauses(voice: Path, alignment: dict, max_pause: float, sr: int, out_wav: Path) -> tuple[dict, float]:
+    """Shorten every silence between words to `max_pause` seconds.
+
+    Cuts the middle of each long gap (keeps max_pause/2 after the word and before the next one),
+    then shifts the alignment so captions and shots stay in sync. Returns (alignment, seconds removed).
+    """
+    words = alignment_to_words(alignment)
+    half = max_pause / 2
+    cuts = [(a["end"] + half, b["start"] - half) for a, b in zip(words, words[1:])
+            if b["start"] - a["end"] > max_pause]
+
+    run(["ffmpeg", "-y", "-hide_banner", "-i", str(voice), "-ac", "1", "-ar", str(sr),
+         "-c:a", "pcm_s16le", str(out_wav)])
+    with wave.open(str(out_wav), "rb") as w:
+        params = w.getparams()
+        pcm = w.readframes(w.getnframes())
+    width = params.sampwidth  # bytes per sample (mono)
+    kept, pos = [], 0
+    for start, end in cuts:
+        a, b = int(start * sr) * width, int(end * sr) * width
+        kept.append(pcm[pos:a])
+        pos = b
+    kept.append(pcm[pos:])
+    with wave.open(str(out_wav), "wb") as w:
+        w.setparams(params)
+        w.writeframes(b"".join(kept))
+
+    def shift(t: float) -> float:
+        return round(t - sum(min(end, t) - start for start, end in cuts if start < t), 4)
+
+    new = {
+        "characters": alignment["characters"],
+        "character_start_times_seconds": [shift(t) for t in alignment["character_start_times_seconds"]],
+        "character_end_times_seconds": [shift(t) for t in alignment["character_end_times_seconds"]],
+    }
+    return new, sum(end - start for start, end in cuts)
 
 
 def mix(voice: Path, cues: list[dict], cfg: dict, out_wav: Path, music: Path | None,

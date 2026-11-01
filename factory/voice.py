@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import math
 import struct
@@ -52,6 +53,26 @@ def tts_with_timestamps(text: str, cfg: dict, out_audio: Path) -> dict:
     alignment = data.get("alignment") or data.get("normalized_alignment")
     if not alignment:
         raise RuntimeError("ElevenLabs nu a returnat alignment.")
+    return alignment
+
+
+def _tts_key(text: str, v: dict) -> str:
+    """Fingerprint of everything that changes the generated voice (tempo is applied later, so not here)."""
+    parts = [text, v["voice_id"], v["model_id"], v["settings"], v.get("seed"), v["output_format"]]
+    return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
+
+
+def tts_cached(text: str, cfg: dict, out_audio: Path) -> dict:
+    """Like tts_with_timestamps, but reuses the voice already generated if text and voice settings are unchanged."""
+    key = _tts_key(text, cfg["voice"])
+    cache = out_audio.with_name("voice_cache.json")
+    if out_audio.exists() and cache.exists():
+        saved = json.loads(cache.read_text(encoding="utf-8"))
+        if saved.get("key") == key:
+            print("  (refolosesc vocea generata deja, fara cost ElevenLabs)")
+            return saved["alignment"]
+    alignment = tts_with_timestamps(text, cfg, out_audio)
+    cache.write_text(json.dumps({"key": key, "alignment": alignment}), encoding="utf-8")
     return alignment
 
 

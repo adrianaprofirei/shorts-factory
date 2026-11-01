@@ -87,6 +87,9 @@ voice:
   seed: 1234                       # aceeasi voce, rezultate cat mai consistente
   tempo: 1.00                      # accelerare extra dupa generare (fara schimbare de ton). 1.0 = oprit.
                                    # canalul de referinta: ~3.5 cuvinte/s; Liam la 1.00 da ~2.75 (ales dupa ureche, nov 2026).
+  max_pause: 0.15                  # pauzele dintre cuvinte mai lungi de atat (secunde) se scurteaza. 0 = oprit.
+                                   # ElevenLabs marcheaza finalul cuvantului cu ~0.2 s prea tarziu, deci pauza
+                                   # auzita e ~max_pause + 0.2 (0.15 -> ~0.35 s). Canalul de referinta: nicio pauza peste 0.4 s.
 
 # ---------------------------------------------------------------------
 # Audio mix

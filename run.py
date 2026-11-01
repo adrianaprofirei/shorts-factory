@@ -71,7 +71,7 @@ def prep(slug: str, cfg: dict, mock: bool) -> None:
         voice_file = d / "voice.wav"
     else:
         voice_file = d / "voice.mp3"
-        alignment = voice.tts_with_timestamps(text, cfg, voice_file)
+        alignment = voice.tts_cached(text, cfg, voice_file)
     tempo = float(cfg["voice"].get("tempo", 1.0) or 1.0)
     if abs(tempo - 1.0) > 0.001:
         fast = d / "voice_tempo.wav"
@@ -79,6 +79,12 @@ def prep(slug: str, cfg: dict, mock: bool) -> None:
              "-ar", str(cfg["audio"]["sample_rate"]), str(fast)])
         alignment = voice.scale_alignment(alignment, tempo)
         voice_file = fast
+    max_pause = float(cfg["voice"].get("max_pause", 0) or 0)
+    if max_pause > 0:
+        trimmed = d / "voice_trimmed.wav"
+        alignment, cut = audio.cap_pauses(voice_file, alignment, max_pause, cfg["audio"]["sample_rate"], trimmed)
+        print(f"  pauze scurtate la max {max_pause:.2f}s: -{cut:.2f}s")
+        voice_file = trimmed
     voice.save_alignment(alignment, d / "alignment.json")
 
     voice_dur = duration(voice_file)
