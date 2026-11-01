@@ -99,6 +99,12 @@ def generate_sfx(prompt: str, out_path: Path, duration: float | None = None) -> 
     out_path.write_bytes(r.content)
 
 
+def generate_music(prompt: str, out_path: Path, length_s: float) -> None:
+    """Create one instrumental music bed from a text prompt (ElevenLabs /v1/music)."""
+    body = {"prompt": prompt, "music_length_ms": int(length_s * 1000), "force_instrumental": True}
+    out_path.write_bytes(_post(f"{BASE}/v1/music", body).content)
+
+
 SFX_PROMPTS = {
     "whoosh": ("fast cartoon whoosh, clean, no music", 1.0),
     "impact": ("punchy cartoon impact thud, short", 0.8),

@@ -37,8 +37,9 @@ def normalize_sfx(path: Path, target: float, peak: float = -1.0) -> float:
     """
     m = loudness(path, target)
     level, tp = float(m["input_i"]), float(m["input_tp"])
-    if not (math.isfinite(level) and math.isfinite(tp)):
-        return 0.0  # silent file, nothing to measure
+    if not (math.isfinite(level) and math.isfinite(tp)) or level < target - 24:
+        # (almost) silent: boosting it would only amplify noise
+        raise ValueError(f"{path.name} e aproape mut ({level:.0f} LUFS)")
     gain = min(target - level, peak - tp)
     if abs(gain) < 1.5:  # inaudible in the mix; skipping it also avoids re-encoding the mp3 on every run
         return 0.0
@@ -104,11 +105,15 @@ def mix(voice: Path, cues: list[dict], cfg: dict, out_wav: Path, music: Path | N
     mix_labels = []
     n = 1
     if music:
+        # Music sits a fixed number of dB under the voice, whatever the track's own loudness (reference-style).
+        music_gain = (float(loudness(voice)["input_i"]) + a["voice_gain_db"] - a["music_under_voice_db"]
+                      - float(loudness(music)["input_i"]))
+        report["music_gain_db"] = round(music_gain, 2)
         inputs += ["-stream_loop", "-1", "-i", str(music)]
         fade_st = max(0.0, total - 0.8)
         filters.append(
             f"[{n}:a]aresample={sr},aformat=sample_fmts=fltp:channel_layouts=stereo,"
-            f"atrim=0:{total:.3f},asetpts=N/SR/TB,volume={a['music_gain_db']}dB,"
+            f"atrim=0:{total:.3f},asetpts=N/SR/TB,volume={music_gain:.2f}dB,"
             f"afade=t=in:d=0.3,afade=t=out:st={fade_st:.3f}:d=0.8[mraw]"
         )
         if a.get("duck_music", True):

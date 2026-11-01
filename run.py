@@ -237,10 +237,29 @@ def cmd_sfx_pack(args, cfg):
     print(f"  egalizez volumul la {target} LUFS...")
     for tag in cfg["library"]["sfx_tags"]:
         path = audio.find_sfx(tag)
-        gain = audio.normalize_sfx(path, target) if path else 0.0
+        try:
+            gain = audio.normalize_sfx(path, target) if path else 0.0
+        except ValueError as e:
+            print(f"    ATENTIE: {e}. Sterge-l si ruleaza din nou sfx-pack.")
+            continue
         if gain:
             print(f"    {tag}: {gain:+.1f} dB")
     print("Efectele sunt in assets/sfx/. Asculta-le si inlocuieste ce nu-ti place (apoi ruleaza din nou sfx-pack).")
+
+
+def cmd_music_pack(args, cfg):
+    from factory.config import ASSETS
+    m = cfg["music"]
+    for mood, desc in m["moods"].items():
+        folder = ASSETS / "music" / mood
+        folder.mkdir(parents=True, exist_ok=True)
+        if audio.pick_music(mood, mood):
+            continue  # this mood already has a track
+        prompt = f"{desc} {m['style']}"
+        print(f"  generez muzica {mood}...")
+        voice.generate_music(prompt, folder / f"{mood}_01.mp3", m["length_s"])
+        (folder / f"{mood}_01.prompt.txt").write_text(prompt, encoding="utf-8")  # proof of what was generated
+    print("Muzica e in assets/music/<stare>/. Asculta-o; ce nu-ti place stergi si rulezi din nou music-pack.")
 
 
 def cmd_selftest(args, cfg):
@@ -283,7 +302,7 @@ def main():
     s.set_defaults(fn=cmd_final)
 
     for name, fn in (("voices", cmd_voices), ("models", cmd_models), ("sfx-pack", cmd_sfx_pack),
-                     ("selftest", cmd_selftest)):
+                     ("music-pack", cmd_music_pack), ("selftest", cmd_selftest)):
         sub.add_parser(name).set_defaults(fn=fn)
 
     args = p.parse_args()

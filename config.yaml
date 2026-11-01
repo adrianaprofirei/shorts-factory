@@ -92,15 +92,40 @@ voice:
                                    # auzita e ~max_pause + 0.2 (0.15 -> ~0.35 s). Canalul de referinta: nicio pauza peste 0.4 s.
 
 # ---------------------------------------------------------------------
+# Muzica (ElevenLabs Music, licenta comerciala de la planul Starter):  python run.py music-pack
+# Genereaza cate o piesa pentru fiecare stare care nu are deja muzica in assets/music/<stare>/.
+# Prompt = descrierea starii + stilul comun. Familia sonora aleasa dupa ureche (nov 2026): pizzicato + marimba + violoncel.
+# ---------------------------------------------------------------------
+music:
+  length_s: 60                     # piesa se repeta automat daca video-ul e mai lung
+  style: >-
+    Background music under a narrator voiceover for a short animated story. Instrumental only, no vocals.
+    Steady constant energy with a subtle build in the last third. Keep the midrange sparse so a voice sits
+    clearly on top. No lead melody that competes with speech.
+  moods:
+    tense: >-
+      Mysterious tense background for a kids' animated mystery: light pizzicato strings, soft marimba,
+      low cello drone, minor key, 88 BPM, sparse and playful-dark.
+    wonder: >-
+      Magical wonder background for a kids' animated story: light pizzicato strings, soft marimba,
+      celesta sparkles, warm cello pad, major key, 90 BPM, curious and bright.
+    emotional: >-
+      Warm emotional background for a kids' animated story: slow gentle pizzicato, soft marimba,
+      sustained cello and soft strings, bittersweet major key, 75 BPM, tender.
+    playful: >-
+      Playful funny background for a kids' animated story: bouncy pizzicato strings, marimba,
+      light woodblock percussion, low bassoon notes, major key, 100 BPM, mischievous.
+
+# ---------------------------------------------------------------------
 # Audio mix
 # ---------------------------------------------------------------------
 audio:
   sample_rate: 48000
   voice_gain_db: 0
-  music_gain_db: -16               # muzica sub voce
+  music_under_voice_db: 8          # muzica sta cu atatia dB sub voce, oricat de tare e piesa (canalul de referinta: ~6-10)
   sfx_gain_db: -6
   sfx_target_lufs: -16             # sfx-pack aduce toate efectele la acelasi volum (fara sa treaca de -1 dB varf)
-  duck_music: true                 # coboara muzica automat cand vorbeste naratorul
+  duck_music: false                # true = coboara muzica cand vorbeste naratorul (canalul de referinta nu face asta)
   tail_seconds: 0.25               # liniste la final (bucla curata)
   target_lufs: -14                 # loudness standard pentru Shorts/TikTok
   true_peak_db: -1.5

@@ -19,7 +19,8 @@ fisa de job pentru animator -> (animatorul animeaza) -> asamblare finala cu subt
    Trebuie sa scrie `SELFTEST TRECUT`. Rezultatul de test e in `projects/...-mock/`.
 4. Copiaza `.env.example` ca `.env` si pune cheile: `ANTHROPIC_API_KEY` (platform.claude.com) si `ELEVENLABS_API_KEY` (elevenlabs.io -> Developers -> API keys).
 5. Alege vocea: `python run.py voices`, copiaza `voice_id` in `config.yaml`.
-6. Genereaza efectele sonore: `python run.py sfx-pack`. Pune muzica in `assets/music/<stare>/`.
+6. Genereaza efectele sonore si muzica: `python run.py sfx-pack` si `python run.py music-pack`
+   (sau pune muzica ta licentiata in `assets/music/<stare>/`).
 7. Editeaza `config.yaml`: numele canalului si **biblioteca** (decorurile si personajele pe care le ai cu adevarat).
 
 ## 2. Fluxul zilnic
