@@ -75,7 +75,7 @@ library:
 # ---------------------------------------------------------------------
 voice:
   provider: "elevenlabs"
-  voice_id: "PUT_VOICE_ID_HERE"    # il gasesti cu:  python run.py voices
+  voice_id: "TX3LPaxmHKxFdv7VOQHJ" # Liam (ElevenLabs); alta voce:  python run.py voices
   model_id: "eleven_multilingual_v2"   # vezi alte modele cu: python run.py models
   output_format: "mp3_44100_128"   # merge pe orice plan; WAV cere planul Pro
   settings:
@@ -85,8 +85,8 @@ voice:
     use_speaker_boost: true
     speed: 1.15                    # 0.7 - 1.2 (limita ElevenLabs)
   seed: 1234                       # aceeasi voce, rezultate cat mai consistente
-  tempo: 1.12                      # accelerare extra dupa generare (fara schimbare de ton).
-                                   # Tinta: ~3.4-3.6 cuvinte/secunda, ca la referinta. 1.0 = oprit.
+  tempo: 1.00                      # accelerare extra dupa generare (fara schimbare de ton). 1.0 = oprit.
+                                   # canalul de referinta: ~3.5 cuvinte/s; Liam la 1.00 da ~2.75 (ales dupa ureche, nov 2026).
 
 # ---------------------------------------------------------------------
 # Audio mix
