@@ -46,6 +46,58 @@ def build_animatic(project: Path, shots: list[dict], cfg: dict, ass_name: str,
     return project / out_name
 
 
+CLIP_EXT = (".mp4", ".mov", ".webm", ".mkv")
+STILL_EXT = (".png", ".jpg", ".jpeg", ".webp")
+
+
+def _find(folder: Path, stem: str, exts: tuple[str, ...]) -> Path | None:
+    return next((folder / f"{stem}{e}" for e in exts if (folder / f"{stem}{e}").exists()), None)
+
+
+def assemble(project: Path, shots: list[dict], cfg: dict, out_name: str = "render.mp4") -> list[str]:
+    """Build render.mp4 from clips/shot_XX.* (or keyframes/shot_XX.* shown with a slow push-in).
+
+    Each clip is cut from its start to the exact shot length, so the cuts land where shots.json says.
+    Returns notes about shots that used a still instead of a clip.
+    """
+    v = cfg["video"]
+    W, H, fps = v["width"], v["height"], v["fps"]
+    cover = f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}"
+    segs = project / "_segments"
+    segs.mkdir(exist_ok=True)
+    notes, missing, listing = [], [], []
+    for s in shots:
+        stem = f"shot_{s['shot']:02d}"
+        frames = round(s["end"] * fps) - round(s["start"] * fps)  # cumulative rounding keeps total exact
+        seg = segs / f"{stem}.mp4"
+        clip = _find(project / "clips", stem, CLIP_EXT)
+        still = _find(project / "keyframes", stem, STILL_EXT)
+        if clip:
+            vf = f"fps={fps},{cover},setsar=1,tpad=stop_mode=clone:stop_duration=10"
+            src = ["-i", str(clip)]
+        elif still:
+            notes.append(f"{stem}: fara clip, folosesc imaginea cu zoom lent")
+            vf = (f"scale={W * 2}:{H * 2}:force_original_aspect_ratio=increase,crop={W * 2}:{H * 2},"
+                  f"zoompan=z='1+0.06*on/{frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+                  f"d={frames}:s={W}x{H}:fps={fps},setsar=1")
+            src = ["-i", str(still)]
+        else:
+            missing.append(stem)
+            continue
+        run(["ffmpeg", "-y", "-hide_banner", *src, "-an", "-vf", vf, "-frames:v", str(frames),
+             "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", "-r", str(fps),
+             str(seg)])
+        listing.append(f"file '{seg.name}'")
+    if missing:
+        raise SystemExit(f"Lipsesc clipuri si imagini pentru: {', '.join(missing)} "
+                         f"(pune-le in {project / 'clips'} sau {project / 'keyframes'}).")
+    (segs / "list.txt").write_text("\n".join(listing) + "\n", encoding="utf-8")
+    run(["ffmpeg", "-y", "-hide_banner", "-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy",
+         str((project / out_name).resolve())], cwd=segs)
+    shutil.rmtree(segs)
+    return notes
+
+
 def zoom_expr(windows: list[tuple[float, float]], zoom: float) -> str:
     if not windows:
         return "1"

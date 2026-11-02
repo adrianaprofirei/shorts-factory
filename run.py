@@ -5,7 +5,11 @@
   python run.py new --premise "..."                    script + voce + mix + fisa de job + animatic
   python run.py new --ideas FISIER.json --pick 1       la fel, pornind de la o idee generata
   python run.py prep SLUG                               refa voce/mix/fisa/animatic dupa ce editezi script.json
-  python run.py final SLUG [--render cale.mp4]          asamblare finala dupa ce vine animatia + QA
+  python run.py library                                 prompturi pentru imaginile de referinta (assets/library/)
+  python run.py shotsheet SLUG                          refa shot_prompts.html (prompturi imagine/video pe cadre)
+  python run.py assemble SLUG                           clips/ + keyframes/ -> render.mp4, taiat pe cadre
+  python run.py final SLUG [--render cale.mp4]          asamblare finala (subtitrari, zoom, audio) + QA
+  python run.py music-pack                              genereaza muzica pentru starile care nu au (ElevenLabs)
   python run.py voices | models                         listeaza vocile / modelele ElevenLabs
   python run.py sfx-pack                                genereaza efectele sonore care lipsesc (ElevenLabs)
   python run.py selftest                                test complet fara API (verifica instalarea)
@@ -21,7 +25,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from factory import audio, captions, jobcard, qa, story, timing, video, voice
+from factory import audio, captions, jobcard, qa, shotsheet, story, timing, video, voice
 from factory.config import PROJECTS, load_config, load_env, project_dir, slugify
 from factory.ff import check_tools, duration, run
 
@@ -111,6 +115,7 @@ def prep(slug: str, cfg: dict, mock: bool) -> None:
               for s in shots]
     captions.build_ass(chunks, cfg, d / "animatic.ass", shot_labels=labels)
     jobcard.write_job_card(script, shots, cfg, d, slug, total)
+    shotsheet.write(shotsheet.build(shots, cfg), script["title"], d)
     video.build_animatic(d, shots, cfg, "animatic.ass", "master.wav", total)
 
     print(f"\nGata: {d}")
@@ -122,7 +127,7 @@ def prep(slug: str, cfg: dict, mock: bool) -> None:
         print(f"  atentie: lipsesc efectele {sorted(set(report['sfx_missing']))} (python run.py sfx-pack)")
     for w in warns_now:
         print("  atentie:", w)
-    print("  Trimite animatorului: job_card.md, master.wav, animatic.mp4, shots.csv")
+    print(f"  Animatia: deschide shot_prompts.html, fa imaginile si clipurile, apoi: python run.py assemble {slug}")
 
 
 def cmd_new(args, cfg):
@@ -161,13 +166,33 @@ def cmd_prep(args, cfg):
     prep(args.slug, cfg, args.mock)
 
 
+def cmd_shotsheet(args, cfg):
+    d = project_dir(args.slug)
+    path = shotsheet.write(shotsheet.build(_load(d / "shots.json"), cfg), _load(d / "script.json")["title"], d)
+    print(f"Fisa de cadre: {path}")
+
+
+def cmd_library(args, cfg):
+    path = shotsheet.write_library(shotsheet.build_library(cfg))
+    print(f"Prompturile pentru imaginile de referinta: {path}")
+
+
+def cmd_assemble(args, cfg):
+    check_tools()
+    d = project_dir(args.slug)
+    print("  asamblez animatia din clips/ si keyframes/...")
+    for note in video.assemble(d, _load(d / "shots.json"), cfg):
+        print("  ", note)
+    print(f"Animatia: {d / 'render.mp4'}\nUrmatorul pas: python run.py final {args.slug}")
+
+
 def cmd_final(args, cfg):
     check_tools()
     d = project_dir(args.slug)
     script = _load(d / "script.json")
     render = Path(args.render) if args.render else d / "render.mp4"
     if not render.exists():
-        sys.exit(f"Nu gasesc animatia: {render}. Pune fisierul de la animator ca {d / 'render.mp4'}.")
+        sys.exit(f"Nu gasesc animatia: {render}. Ruleaza intai: python run.py assemble {args.slug}")
     if render.resolve() != (d / "render.mp4").resolve():
         shutil.copy2(render, d / "render.mp4")
     total = duration(d / "master.wav")
@@ -263,19 +288,26 @@ def cmd_music_pack(args, cfg):
 
 
 def cmd_selftest(args, cfg):
-    """End-to-end test with no API: mock script + mock voice + fake 'animator render'."""
+    """End-to-end test with no API: mock script + mock voice + fake keyframes/clips -> assemble -> final."""
     check_tools()
     print("== selftest: pipeline complet fara API ==")
     ns = argparse.Namespace(ideas=None, premise=None, pick=1, mock=True, script_only=False)
     cmd_new(ns, cfg)
     slug = sorted(p.name for p in PROJECTS.iterdir() if p.is_dir() and p.name.endswith("-mock"))[-1]
     d = PROJECTS / slug
-    # fake animator delivery: a moving test pattern at 24 fps and 720x1280 (wrong on purpose,
-    # so the test also proves that size/fps get fixed automatically)
-    total = duration(d / "master.wav")
-    run(["ffmpeg", "-y", "-hide_banner", "-f", "lavfi", "-i", f"testsrc2=s=720x1280:r=24:d={total:.3f}",
-         "-c:v", "libx264", "-preset", "veryfast", "-crf", "28", "-pix_fmt", "yuv420p", "fake_render.mp4"], cwd=d)
-    cmd_final(argparse.Namespace(slug=slug, render=str(d / "fake_render.mp4")), cfg)
+    # fake animation: a still for every shot, plus a moving clip for odd shots at 24 fps and 720x1280
+    # (wrong on purpose, so the test also proves that assemble fixes size/fps and falls back to stills)
+    (d / "keyframes").mkdir(exist_ok=True)
+    (d / "clips").mkdir(exist_ok=True)
+    for s in _load(d / "shots.json"):
+        n = f"shot_{s['shot']:02d}"
+        run(["ffmpeg", "-y", "-hide_banner", "-f", "lavfi", "-i", "testsrc2=s=720x1280", "-frames:v", "1",
+             f"keyframes/{n}.png"], cwd=d)
+        if s["shot"] % 2:
+            run(["ffmpeg", "-y", "-hide_banner", "-f", "lavfi", "-i", "testsrc2=s=720x1280:r=24:d=4",
+                 "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p", f"clips/{n}.mp4"], cwd=d)
+    cmd_assemble(argparse.Namespace(slug=slug), cfg)
+    cmd_final(argparse.Namespace(slug=slug, render=None), cfg)
     rep = _load(d / "qa_report.json")
     print("\nSELFTEST", "TRECUT" if rep["ok"] else "PICAT")
     sys.exit(0 if rep["ok"] else 1)
@@ -301,8 +333,11 @@ def main():
     s = sub.add_parser("final"); s.add_argument("slug"); s.add_argument("--render")
     s.set_defaults(fn=cmd_final)
 
+    s = sub.add_parser("shotsheet"); s.add_argument("slug"); s.set_defaults(fn=cmd_shotsheet)
+    s = sub.add_parser("assemble"); s.add_argument("slug"); s.set_defaults(fn=cmd_assemble)
+
     for name, fn in (("voices", cmd_voices), ("models", cmd_models), ("sfx-pack", cmd_sfx_pack),
-                     ("music-pack", cmd_music_pack), ("selftest", cmd_selftest)):
+                     ("music-pack", cmd_music_pack), ("library", cmd_library), ("selftest", cmd_selftest)):
         sub.add_parser(name).set_defaults(fn=fn)
 
     args = p.parse_args()

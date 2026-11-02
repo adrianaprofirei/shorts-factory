@@ -1,0 +1,2 @@
+Animate this frame as one continuous shot from a 3D animated short with blocky toy-like characters. {action} The main movement must be complete within the first {duration} seconds. Camera: {camera}, with a slow, subtle camera move. The hero's decal face: {expression}. {vfx}
+Keep the characters, their faces and the set exactly as in the image. Smooth, clear, readable motion. No text, no subtitles, no logos, no new characters, no cuts.

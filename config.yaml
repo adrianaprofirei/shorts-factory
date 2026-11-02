@@ -42,7 +42,7 @@ story:
 library:
   hero:
     id: "hero"
-    description: "the mascot: blocky R6 kid, mustard-yellow hoodie, red scarf, decal face"
+    description: "the mascot: blocky kid, mustard-yellow hoodie, red scarf, dark blue trousers, brown shoes"
   cast:
     - {id: "mom",      description: "mother, green sweater, brown hair"}
     - {id: "dad",      description: "father, blue shirt, glasses"}
@@ -50,7 +50,7 @@ library:
     - {id: "friend",   description: "best friend girl, purple jacket, ponytail"}
     - {id: "elder",    description: "old man of the town, grey beard, cane"}
     - {id: "neighbor", description: "neighbour kid, orange cap"}
-    - {id: "crowd",    description: "generic townspeople, 3-8 background avatars"}
+    - {id: "crowd",    description: "generic townspeople, background characters of different ages"}
   sets:
     - {id: "home_living_room", lighting: ["day", "evening"]}
     - {id: "home_bedroom",     lighting: ["day", "night"]}

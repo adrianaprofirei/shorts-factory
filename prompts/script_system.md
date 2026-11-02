@@ -27,7 +27,7 @@ For every beat give one shot. You may ONLY use ids from the PRODUCTION LIBRARY b
 - "cast": list of cast ids that appear (use "hero" for the protagonist).
 - "expression": the hero's face, from the expression list.
 - "camera": from the camera list.
-- "action": one plain sentence, what physically happens in this shot (what moves, from where to where).
+- "action": one plain sentence, what physically happens in this shot (what moves, from where to where). ONE single movement that fits in about 2 seconds of animation: never two events ("the plate mends and the window cracks" is two shots). It is turned into an AI video prompt, so describe only what is visible.
 - "vfx": from the vfx list ("none" if nothing).
 Change the camera angle on almost every beat. Re-use sets: a story should need 2-4 sets in total.
 

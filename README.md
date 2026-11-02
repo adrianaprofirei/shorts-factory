@@ -30,9 +30,9 @@ fisa de job pentru animator -> (animatorul animeaza) -> asamblare finala cu subt
 | Idei | `python run.py ideas --n 15` | `projects/ideas_*.json`, lista punctata in terminal |
 | Script | `python run.py new --ideas projects/ideas_X.json --pick 3 --script-only` | `projects/<slug>/script.md` de citit |
 | (optional) editezi | modifici `script.json` cu mana | - |
-| Pre-productie | `python run.py prep <slug>` | `master.wav`, `animatic.mp4`, `job_card.md`, `shots.csv` |
-| Trimiti animatorului | cele 4 fisiere de mai sus | - |
-| Primesti animatia | o salvezi ca `projects/<slug>/render.mp4` | - |
+| Pre-productie | `python run.py prep <slug>` | `master.wav`, `animatic.mp4`, `shot_prompts.html` |
+| Imagini + clipuri | prompturile din `shot_prompts.html` (AI Studio / Kling) | `keyframes/shot_XX.png`, `clips/shot_XX.mp4` |
+| Animatia | `python run.py assemble <slug>` | `render.mp4`, taiat exact pe cadre |
 | Final | `python run.py final <slug>` | `final.mp4`, `qa_report.json`, `upload.txt` |
 
 Fara `--script-only`, comanda `new` face direct si pre-productia.
