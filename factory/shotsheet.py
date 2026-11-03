@@ -59,18 +59,24 @@ def build_library(cfg: dict) -> list[dict]:
     lib = cfg["library"]
     char_tpl = (PROMPTS / "ref_character.md").read_text(encoding="utf-8").strip()
     set_tpl = (PROMPTS / "ref_set.md").read_text(encoding="utf-8").strip()
+    variant = (PROMPTS / "ref_set_variant.md").read_text(encoding="utf-8").strip()
     turnaround = "One character shown four times side by side: front view, 3/4 view, side profile, back view."
-    lineup = "A line-up of six different characters side by side, front view, varied casual clothes and hair."
+    lineup = ("A line-up of six different strangers side by side, front view, varied ages, casual clothes and hair. "
+              "None of them is one of the main characters: no red scarf, no mustard-yellow hoodie, no glasses with "
+              "a blue shirt, no grey beard with a cane.")
     items = []
     for c in [lib["hero"], *lib["cast"]]:
         group = c["id"] in GROUPS
         prompt = char_tpl.format(layout=lineup if group else turnaround,
                                  who="The characters" if group else "The character", description=c["description"])
-        items.append({"file": f"{c['id']}.png", "kind": "personaj", "prompt": prompt})
+        items.append({"file": f"{c['id']}.png", "kind": "personaj", "prompt": prompt, "attach": None})
     for s in lib["sets"]:
+        first = f"{s['id']}_{s['lighting'][0]}.png"
         for light in s["lighting"]:
-            items.append({"file": f"{s['id']}_{light}.png", "kind": "decor",
-                          "prompt": set_tpl.format(set=_readable(s["id"]), lighting=light)})
+            prompt = set_tpl.format(set=_readable(s["id"]), lighting=light)
+            attach = None if light == s["lighting"][0] else first  # other lightings: same place as the first image
+            items.append({"file": f"{s['id']}_{light}.png", "kind": "decor", "attach": attach,
+                          "prompt": f"{variant}\n\n{prompt}" if attach else prompt})
     for it in items:
         it["exists"] = (LIBRARY / it["file"]).exists()
     return items
@@ -83,11 +89,14 @@ def write_library(items: list[dict]) -> Path:
              "<p>Le faci o singura data, cu <b>Nano Banana Pro</b>. Incepi cu <code>hero.png</code>: genereaza "
              "variante pana iti place eroul, el devine mascota canalului. Personajele: orice forma, fundal alb. "
              "Decorurile: alegi <b>9:16</b>. Salvezi in <code>assets/library/</code> cu numele exact de mai jos. "
-             "Pentru acelasi stil, ataseaza <code>hero.png</code> ca referinta de stil la celelalte.</p>"]
+             "Pentru acelasi stil, ataseaza <code>hero.png</code> ca referinta de stil la celelalte "
+             "(la <code>crowd.png</code> doar pentru stil, nu copia personajele).</p>"]
     for i, it in enumerate(items):
         state = "&#10003; facut" if it["exists"] else "<span class='miss'>lipseste</span>"
+        attach = (f"<div>Ataseaza <code>{it['attach']}</code> (acelasi loc, alta lumina)</div>"
+                  if it["attach"] else "")
         parts.append(f"<div class='card'><b>{it['file']}</b> <span class='meta'>{it['kind']} &middot; {state}</span>"
-                     f"<textarea readonly id='r{i}'>{html.escape(it['prompt'])}</textarea>"
+                     f"{attach}<textarea readonly id='r{i}'>{html.escape(it['prompt'])}</textarea>"
                      f"<button onclick=\"cp('r{i}')\">Copiaza</button></div>")
     parts.append(COPY_JS)
     path = LIBRARY / "reference_prompts.html"
