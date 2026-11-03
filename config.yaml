@@ -46,7 +46,7 @@ library:
   cast:
     - {id: "mom",      description: "mother, light blue sweater, brown hair"}
     - {id: "dad",      description: "father, blue shirt, glasses"}
-    - {id: "brother",  description: "little brother, a head shorter than the hero, striped red-white T-shirt, no cap"}
+    - {id: "brother",  description: "little brother, a head shorter than the hero, short brown hair, striped red-white T-shirt, light blue shorts, no cap"}
     - {id: "friend",   description: "best friend girl, purple jacket, ponytail"}
     - {id: "elder",    description: "old man of the town, grey beard, cane"}
     - {id: "neighbor", description: "neighbour kid, orange cap"}
